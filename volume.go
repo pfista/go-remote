@@ -3,16 +3,32 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 )
 
+var mutex = &sync.Mutex{}
+
 func main() {
-	http.HandleFunc("/volume", volume)
-	http.ListenAndServe(":8082", nil)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/volume", volume)
+	handler := cors.Default().Handler(mux)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:8000", "localhost"},
+		AllowCredentials: true,
+	})
+
+	// Insert the middleware
+	handler = c.Handler(handler)
+
+	http.ListenAndServe(":8082", handler)
 }
 
 type Volume struct {
@@ -58,8 +74,10 @@ func (vol *Volume) update() {
 }
 
 func setVolume(level string) {
-	result := execApplescript("set volume output volume " + level)
-	fmt.Println("Result: " + result)
+	mutex.Lock()
+	defer mutex.Unlock()
+	execApplescript("set volume output volume " + level)
+	fmt.Println("setting volume: " + level)
 }
 
 func execApplescript(command string) string {
