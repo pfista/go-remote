@@ -21,7 +21,7 @@ func main() {
 	handler := cors.Default().Handler(mux)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8000", "localhost"},
+		AllowedOrigins:   []string{"http://localhost:8000", "*"},
 		AllowCredentials: true,
 	})
 
